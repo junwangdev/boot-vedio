@@ -4,10 +4,11 @@ import cn.hutool.core.util.RandomUtil;
 import cn.hutool.json.JSONUtil;
 import org.gjw.mvc.bean.ImRoomDetail;
 import org.gjw.mvc.service.ImRoomDetailService;
+import org.gjw.websocket.handler.im.IMMessageData;
 import org.gjw.websocket.handler.im.VedioMeetingWSHandler;
 import org.gjw.websocket.model.common.AnalyzerProperties;
 import org.gjw.websocket.model.common.SocketContext;
-import org.gjw.websocket.model.common.WSIMMessage;
+import org.gjw.websocket.model.common.WSMessage;
 import org.gjw.websocket.model.interfaces.WSMessageAnalyzer;
 import org.gjw.websocket.util.WSContextUtil;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,13 +26,13 @@ import java.util.Map;
  * Date 2023/4/2 15:01
  */
 @Component
-public class CreateRoomAnalyzer extends WSMessageAnalyzer {
+public class CreateRoomAnalyzer extends WSMessageAnalyzer<IMMessageData> {
 
     @Autowired
     private ImRoomDetailService imRoomDetailService;
 
     @Override
-    public void analyze(WebSocketSession session, WSIMMessage message) throws Throwable{
+    public void analyze(WebSocketSession session, IMMessageData message) throws Throwable{
         String userId = WSContextUtil.getUserId(session);
 
         String roomId = RandomUtil.randomString(6);
@@ -48,9 +49,9 @@ public class CreateRoomAnalyzer extends WSMessageAnalyzer {
         Map<String,String> result= new HashMap<>();
         result.put("roomNumber",roomId);
 
-        WSIMMessage WSIMMessage = new WSIMMessage(SocketContext.RequestEventType.CREATE);
-        WSIMMessage.setData(result);
-        session.sendMessage(new TextMessage(JSONUtil.toJsonStr(WSIMMessage)));
+        WSMessage WSMessage = new WSMessage(SocketContext.RequestEventType.CREATE);
+        WSMessage.setData(result);
+        session.sendMessage(new TextMessage(JSONUtil.toJsonStr(WSMessage)));
     }
 
     /**

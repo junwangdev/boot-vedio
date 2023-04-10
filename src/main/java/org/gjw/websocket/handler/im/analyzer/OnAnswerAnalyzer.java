@@ -1,15 +1,18 @@
 package org.gjw.websocket.handler.im.analyzer;
 
+import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.gjw.mvc.bean.RoomJoinRecord;
 import org.gjw.mvc.service.RoomJoinRecordService;
+import org.gjw.websocket.handler.im.IMMessageData;
 import org.gjw.websocket.handler.im.VedioMeetingWSHandler;
 import org.gjw.websocket.model.common.AnalyzerProperties;
 import org.gjw.websocket.model.common.SocketContext;
-import org.gjw.websocket.model.common.WSIMMessage;
+import org.gjw.websocket.model.common.WSMessage;
 import org.gjw.websocket.model.interfaces.WSMessageAnalyzer;
 import org.gjw.websocket.util.WSContextUtil;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,16 +34,15 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @Component
-public class OnAnswerAnalyzer extends WSMessageAnalyzer {
+public class OnAnswerAnalyzer extends WSMessageAnalyzer<IMMessageData> {
 
     @Autowired
     private RoomJoinRecordService roomJoinRecordService;
 
     @Override
-    public void analyze(WebSocketSession session, WSIMMessage message) throws Throwable {
+    public void analyze(WebSocketSession session, IMMessageData message) throws Throwable {
         final String userId = WSContextUtil.getUserId(session);
-        JSONObject reqJsonObj = JSONUtil.parseObj(message.getData());
-        String roomNumber = reqJsonObj.getStr("roomNumber");
+        final String roomNumber = message.getRoomNumber();
 
         List<RoomJoinRecord> recordList = roomJoinRecordService.lambdaQuery()
                 .eq(RoomJoinRecord::getRoomNumber, roomNumber)
@@ -48,32 +50,34 @@ public class OnAnswerAnalyzer extends WSMessageAnalyzer {
                 .list();
 
         if(CollUtil.isEmpty(recordList)){
-            log.warn("房间不存在");
-            WSIMMessage WSIMMessage = new WSIMMessage(SocketContext.ResponseEventType.ERROR);
-            WSIMMessage.setMsg("房间不存在");
-            session.sendMessage(new TextMessage(JSONUtil.toJsonStr(WSIMMessage)));
+            log.warn("房间不存在->{}",message);
+            WSMessage WSMessage = new WSMessage(SocketContext.ResponseEventType.ERROR);
+            WSMessage.setMsg("房间不存在");
+            session.sendMessage(new TextMessage(JSONUtil.toJsonStr(WSMessage)));
             return;
         }
 
-        List<String> memberUserIdList = recordList.stream().map(RoomJoinRecord::getUserId).collect(Collectors.toList());
+        //判断用户是否存在
+        boolean userExists = recordList.stream().anyMatch(r -> StrUtil.equals(r.getUserId(), message.getRemoteUserId()));
 
-        WSIMMessage WSIMMessage = new WSIMMessage(SocketContext.RequestEventType.ANSWER);
-        Map<String,Object> result = new HashMap<>();
-        result.put("roomNumber",reqJsonObj.getStr("roomNumber"));
-        result.put("userId",reqJsonObj.getStr("remoteUserId"));
-        result.put("remoteUserId",userId);
-        result.put("rtcData",reqJsonObj.getJSONObject("rtcData"));
-        WSIMMessage.setData(result);
+        if(!userExists){
+            log.warn("用户不存在->{}",message);
+            WSMessage WSMessage = new WSMessage(SocketContext.ResponseEventType.ERROR);
+            WSMessage.setMsg("用户不存在");
+            session.sendMessage(new TextMessage(JSONUtil.toJsonStr(WSMessage)));
+            return;
+        }
 
-        memberUserIdList.stream()
-            .map(this::getSession)
-            .filter( s -> WSContextUtil.getUserId(s).equals(reqJsonObj.getStr("remoteUserId")))
-            .forEach( s ->{
-                try {
-                    s.sendMessage(new TextMessage(JSONUtil.toJsonStr(WSIMMessage)));
-                } catch (IOException e) {
-                }
-            });
+        //创建响应消息
+        IMMessageData responseData = BeanUtil.copyProperties(message, IMMessageData.class);
+        responseData.setUserId(message.getRemoteUserId());
+        responseData.setRemoteUserId(message.getUserId());
+
+        WSMessage wsMessage = new WSMessage(SocketContext.RequestEventType.ANSWER);
+        wsMessage.setData(responseData);
+
+        //给指定的用户发消息
+       getSession(message.getRemoteUserId()).sendMessage(new TextMessage(JSONUtil.toJsonStr(wsMessage)));
     }
 
     /**

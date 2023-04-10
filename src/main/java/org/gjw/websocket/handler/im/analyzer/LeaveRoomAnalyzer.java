@@ -8,10 +8,11 @@ import org.gjw.mvc.bean.ImRoomDetail;
 import org.gjw.mvc.bean.RoomJoinRecord;
 import org.gjw.mvc.service.ImRoomDetailService;
 import org.gjw.mvc.service.RoomJoinRecordService;
+import org.gjw.websocket.handler.im.IMMessageData;
 import org.gjw.websocket.handler.im.VedioMeetingWSHandler;
 import org.gjw.websocket.model.common.AnalyzerProperties;
 import org.gjw.websocket.model.common.SocketContext;
-import org.gjw.websocket.model.common.WSIMMessage;
+import org.gjw.websocket.model.common.WSMessage;
 import org.gjw.websocket.model.interfaces.WSMessageAnalyzer;
 import org.gjw.websocket.util.WSContextUtil;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,7 +33,7 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @Component
-public class LeaveRoomAnalyzer extends WSMessageAnalyzer {
+public class LeaveRoomAnalyzer extends WSMessageAnalyzer<IMMessageData> {
 
     @Autowired
     private ImRoomDetailService roomDetailRecordService;
@@ -41,9 +42,9 @@ public class LeaveRoomAnalyzer extends WSMessageAnalyzer {
     private RoomJoinRecordService roomJoinRecordService;
 
     @Override
-    public void analyze(WebSocketSession session, WSIMMessage message) throws Throwable {
+    public void analyze(WebSocketSession session, IMMessageData message) throws Throwable {
         final String userId = WSContextUtil.getUserId(session);
-        String roomNumber = JSONUtil.parseObj(message.getData()).getStr("roomNumber");
+        String roomNumber = message.getRoomNumber();
 
         //判断房间是否存在
         ImRoomDetail roomDetail = roomDetailRecordService.lambdaQuery()
@@ -55,9 +56,9 @@ public class LeaveRoomAnalyzer extends WSMessageAnalyzer {
 
         if(Objects.isNull(roomDetail)){
             log.warn("房间不存在");
-            WSIMMessage WSIMMessage = new WSIMMessage(SocketContext.ResponseEventType.ERROR);
-            WSIMMessage.setMsg("房间不存在");
-            session.sendMessage(new TextMessage(JSONUtil.toJsonStr(WSIMMessage)));
+            WSMessage WSMessage = new WSMessage(SocketContext.ResponseEventType.ERROR);
+            WSMessage.setMsg("房间不存在");
+            session.sendMessage(new TextMessage(JSONUtil.toJsonStr(WSMessage)));
             return;
         }
 
@@ -75,9 +76,9 @@ public class LeaveRoomAnalyzer extends WSMessageAnalyzer {
 
         //如果未加入,加入会议
         if(Objects.isNull(roomJoinRecord)){
-            WSIMMessage WSIMMessage = new WSIMMessage(SocketContext.ResponseEventType.ERROR);
-            WSIMMessage.setMsg("您未加入该房间");
-            session.sendMessage(new TextMessage(JSONUtil.toJsonStr(WSIMMessage)));
+            WSMessage WSMessage = new WSMessage(SocketContext.ResponseEventType.ERROR);
+            WSMessage.setMsg("您未加入该房间");
+            session.sendMessage(new TextMessage(JSONUtil.toJsonStr(WSMessage)));
             return;
         }
 
@@ -91,10 +92,10 @@ public class LeaveRoomAnalyzer extends WSMessageAnalyzer {
         memberUserIdSet.stream()
             .map(this::getSession)
             .forEach( s -> {
-                WSIMMessage WSIMMessage = new WSIMMessage(SocketContext.ResponseEventType.PEER_LEAVE);
-                WSIMMessage.setData(MapUtil.of("userId",WSContextUtil.getUserId(s)));
+                WSMessage WSMessage = new WSMessage(SocketContext.ResponseEventType.PEER_LEAVE);
+                WSMessage.setData(MapUtil.of("userId",WSContextUtil.getUserId(s)));
                 try {
-                    s.sendMessage(new TextMessage(JSONUtil.toJsonStr(WSIMMessage)));
+                    s.sendMessage(new TextMessage(JSONUtil.toJsonStr(WSMessage)));
                 } catch (IOException e) {
                 }
             });

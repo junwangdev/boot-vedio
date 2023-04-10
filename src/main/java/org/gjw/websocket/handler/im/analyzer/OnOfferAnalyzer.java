@@ -1,14 +1,16 @@
 package org.gjw.websocket.handler.im.analyzer;
 
+import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import org.gjw.mvc.bean.RoomJoinRecord;
 import org.gjw.mvc.service.RoomJoinRecordService;
+import org.gjw.websocket.handler.im.IMMessageData;
 import org.gjw.websocket.handler.im.VedioMeetingWSHandler;
 import org.gjw.websocket.model.common.AnalyzerProperties;
 import org.gjw.websocket.model.common.SocketContext;
-import org.gjw.websocket.model.common.WSIMMessage;
+import org.gjw.websocket.model.common.WSMessage;
 import org.gjw.websocket.model.interfaces.WSMessageAnalyzer;
 import org.gjw.websocket.util.WSContextUtil;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,15 +31,15 @@ import java.util.stream.Collectors;
  * Date 2023/4/5 15:58
  */
 @Component
-public class OnOfferAnalyzer extends WSMessageAnalyzer {
+public class OnOfferAnalyzer extends WSMessageAnalyzer<IMMessageData> {
     @Autowired
     private RoomJoinRecordService roomJoinRecordService;
 
     @Override
-    public void analyze(WebSocketSession session, WSIMMessage message) throws Throwable {
+    public void analyze(WebSocketSession session, IMMessageData message) throws Throwable {
         final String userId = WSContextUtil.getUserId(session);
-        JSONObject reqJsonObj = JSONUtil.parseObj(message.getData());
-        String roomNumber = reqJsonObj.getStr("roomNumber");
+        final String roomNumber = message.getRoomNumber();
+        final String remoteUserId = message.getRemoteUserId();
 
         List<RoomJoinRecord> recordList = roomJoinRecordService.lambdaQuery()
                 .eq(RoomJoinRecord::getRoomNumber, roomNumber)
@@ -45,33 +47,26 @@ public class OnOfferAnalyzer extends WSMessageAnalyzer {
                 .list();
 
         if(CollUtil.isEmpty(recordList)){
-            WSIMMessage WSIMMessage = new WSIMMessage(SocketContext.ResponseEventType.ERROR);
-            WSIMMessage.setMsg("房间不存在");
-            session.sendMessage(new TextMessage(JSONUtil.toJsonStr(WSIMMessage)));
+            WSMessage wsMessage = new WSMessage(SocketContext.ResponseEventType.ERROR);
+            wsMessage.setMsg("房间不存在");
+            session.sendMessage(new TextMessage(JSONUtil.toJsonStr(wsMessage)));
             return;
         }
 
         List<String> memberUserIdList = recordList.stream().map(RoomJoinRecord::getUserId).collect(Collectors.toList());
 
 
-        WSIMMessage WSIMMessage = new WSIMMessage(SocketContext.RequestEventType.OFFER);
-        Map<String,Object> result = new HashMap<>();
-        result.put("roomNumber",reqJsonObj.getStr("roomNumber"));
-        result.put("userId",reqJsonObj.getStr("remoteUserId"));
-        result.put("remoteUserId",userId);
-        result.put("rtcData",reqJsonObj.getJSONObject("rtcData"));
-        WSIMMessage.setData(result);
+        //创建响应消息
+        IMMessageData responseData = BeanUtil.copyProperties(message, IMMessageData.class);
+        responseData.setUserId(message.getRemoteUserId());
+        responseData.setRemoteUserId(message.getUserId());
 
-        //给指定的成员发送消息
-        memberUserIdList.stream()
-            .map(this::getSession)
-            .filter( s -> WSContextUtil.getUserId(s).equals(reqJsonObj.getStr("remoteUserId")))
-            .forEach( s ->{
-                try {
-                    s.sendMessage(new TextMessage(JSONUtil.toJsonStr(WSIMMessage)));
-                } catch (IOException e) {
-                }
-            });
+        WSMessage wsMessage = new WSMessage(SocketContext.RequestEventType.OFFER);
+        wsMessage.setData(responseData);
+
+        //给指定用户发送消息
+        WebSocketSession remoteSession = getSession(remoteUserId);
+        remoteSession.sendMessage(new TextMessage(JSONUtil.toJsonStr(wsMessage)));
     }
 
     /**

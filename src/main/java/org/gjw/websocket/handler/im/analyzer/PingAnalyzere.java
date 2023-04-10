@@ -1,10 +1,11 @@
 package org.gjw.websocket.handler.im.analyzer;
 
 import lombok.extern.slf4j.Slf4j;
+import org.gjw.websocket.handler.im.IMMessageData;
 import org.gjw.websocket.handler.im.VedioMeetingWSHandler;
 import org.gjw.websocket.model.common.AnalyzerProperties;
 import org.gjw.websocket.model.common.SocketContext;
-import org.gjw.websocket.model.common.WSIMMessage;
+import org.gjw.websocket.model.common.WSMessage;
 import org.gjw.websocket.model.interfaces.WSMessageAnalyzer;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.WebSocketSession;
@@ -18,9 +19,9 @@ import java.util.Map;
  */
 @Slf4j
 @Component
-public class PingAnalyzere extends WSMessageAnalyzer {
+public class PingAnalyzere extends WSMessageAnalyzer<IMMessageData> {
     @Override
-    public void analyze(WebSocketSession session, WSIMMessage message) {
+    public void analyze(WebSocketSession session, IMMessageData message) {
         Map pathVariable = (Map)session.getAttributes().get("pathVariable");
         log.info("客户端发送心跳,userId-->{},message-->{}",pathVariable.get("userId"),message);
     }

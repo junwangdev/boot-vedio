@@ -4,8 +4,6 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.Map;
-
 /**
  * @author guojunwang
  * Description
@@ -14,7 +12,7 @@ import java.util.Map;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class WSIMMessage {
+public class WSMessage {
 
     /**
      * 消息事件模式
@@ -27,7 +25,7 @@ public class WSIMMessage {
 
     private Object data;
 
-    public WSIMMessage(SocketContext.RequestEventType responseEventType){
+    public WSMessage(SocketContext.RequestEventType responseEventType){
         this.eventCode = responseEventType.getEventCode();
         this.msg = responseEventType.getEventDesc();
 
@@ -36,7 +34,7 @@ public class WSIMMessage {
         }
     }
 
-    public WSIMMessage(SocketContext.ResponseEventType responseEventType){
+    public WSMessage(SocketContext.ResponseEventType responseEventType){
         this.eventCode = responseEventType.getEventCode();
         this.msg = responseEventType.getEventDesc();
 
@@ -44,19 +42,4 @@ public class WSIMMessage {
             this.success = true;
         }
     }
-
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class MessageData{
-        private String userId;
-
-        private String remoteUserId;
-
-        private String roomNumber;
-
-        private Map rtcData;
-    }
-
-
 }

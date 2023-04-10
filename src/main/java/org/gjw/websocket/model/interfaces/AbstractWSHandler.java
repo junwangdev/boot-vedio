@@ -7,7 +7,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.gjw.websocket.model.common.SocketContext;
 import org.gjw.websocket.model.common.WSHandlerFactory;
-import org.gjw.websocket.model.common.WSIMMessage;
+import org.gjw.websocket.model.common.WSMessage;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @EqualsAndHashCode
-public abstract class AbstractWSHandler extends TextWebSocketHandler {
+public abstract class AbstractWSHandler<T> extends TextWebSocketHandler {
 
     @Getter
     private Map<String,WebSocketSession> sessionMap = new ConcurrentHashMap<>(64);
@@ -46,12 +46,12 @@ public abstract class AbstractWSHandler extends TextWebSocketHandler {
      */
     public void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception{
         //json转message对象
-        WSIMMessage webSocketMessage = JSONUtil.parseObj(message.getPayload()).toBean(WSIMMessage.class);
+        WSMessage webSocketMessage = JSONUtil.parseObj(message.getPayload()).toBean(WSMessage.class);
 
         if(Objects.isNull(webSocketMessage) || StrUtil.isBlank(webSocketMessage.getEventCode())){
-            WSIMMessage WSIMMessage = new WSIMMessage(SocketContext.RequestEventType.ERROR);
-            WSIMMessage.setMsg("不支持的消息类型");
-            session.sendMessage(new TextMessage(JSONUtil.toJsonStr(WSIMMessage)));
+            WSMessage WSMessage = new WSMessage(SocketContext.RequestEventType.ERROR);
+            WSMessage.setMsg("不支持的消息类型");
+            session.sendMessage(new TextMessage(JSONUtil.toJsonStr(WSMessage)));
             return;
         }
 
@@ -60,14 +60,14 @@ public abstract class AbstractWSHandler extends TextWebSocketHandler {
                 .get(SocketContext.RequestEventType.getEvent(webSocketMessage.getEventCode()));
 
         if(Objects.isNull(analyzer)){
-            WSIMMessage WSIMMessage = new WSIMMessage(SocketContext.RequestEventType.ERROR);
-            WSIMMessage.setMsg("不支持的消息类型");
-            session.sendMessage(new TextMessage(JSONUtil.toJsonStr(WSIMMessage)));
+            WSMessage wsMessage = new WSMessage(SocketContext.RequestEventType.ERROR);
+            wsMessage.setMsg("不支持的消息类型");
+            session.sendMessage(new TextMessage(JSONUtil.toJsonStr(wsMessage)));
             return;
         }
 
         try {
-            analyzer.analyze(session,webSocketMessage);
+            analyzer.analyze(session,messageDisponse(webSocketMessage));
         } catch (Throwable e) {
             throw new RuntimeException(e);
         }
@@ -110,6 +110,11 @@ public abstract class AbstractWSHandler extends TextWebSocketHandler {
      * 获取session的主键
      */
     public abstract String getSessionPrimaryKey(WebSocketSession webSocketSession);
+
+    /**
+     * 接收到消息时的处理
+     */
+    public abstract T messageDisponse(WSMessage wsMessage);
 
     /**
      * 处理的ws地址
