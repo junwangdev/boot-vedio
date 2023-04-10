@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>音视频通话（房间一对多 mesh架构）</title>
+</head>
+<body>
+    <h2>音视频通话（房间一对多）</h2>
+    <div id="buttons">
+        <button id="createBtn">
+            <span>创建房间</span>
+        </button>
+        <button id="joinBtn">
+            <span>加入房间</span>
+        </button>
+        <button id="leaveBtn">
+            <span>离开房间</span>
+        </button>
+    </div>
+    <br/>
+    <button id="selectShareBtn">
+        <span>选择分享屏幕</span>
+    </button>
+    <button id="stopShareBtn" disabled>
+        <span>停止分享</span>
+    </button>
+    <div>
+        <span id="currentRoom"></span>
+    </div>
+    <br/>
+    <button id="startRecordBtn">
+        <span>开始录屏</span>
+    </button>
+    <button id="pauseRecordBtn" disabled>
+        <span>暂停录屏</span>
+    </button>
+    <button id="resumeRecordBtn" disabled>
+        <span>恢复录屏</span>
+    </button>
+    <button id="stopRecordBtn" disabled>
+        <span>停止录屏</span>
+    </button>
+    <br/>
+    <h4>录屏状态</h4>
+    <div id="recordStatus"></div>
+    <div id="videos">
+        <video id="localVideo" muted autoplay playsinline></video>
+    </div>
+    <button id="muteBtn" disabled>
+        <span>静音</span>
+    </button>
+    <div>
+        <div id="logs"></div>
+    </div>
+    <script src="./index_new.js"></script>
+</body>
+</html>
