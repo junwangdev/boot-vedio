@@ -114,6 +114,10 @@ public class VedioMeetingWSHandler extends AbstractWSHandler<IMMessageData> {
             if(StrUtil.isNotBlank(rtcData)){
                 imMessageData.setRtcData(JSONUtil.parseObj(rtcData).toBean(Map.class));
             }
+            String extData = jsonData.getStr("extData");
+            if(StrUtil.isNotBlank(extData)){
+                imMessageData.setExtData(JSONUtil.parseObj(extData).toBean(Map.class));
+            }
 
         }
 

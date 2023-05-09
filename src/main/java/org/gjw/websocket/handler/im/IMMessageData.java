@@ -24,5 +24,13 @@ public class IMMessageData {
 
     private String roomNumber;
 
+    /**
+     * rtc通信数据
+     */
     private Map rtcData;
+
+    /**
+     * 扩展数据
+     */
+    private Map extData;
 }

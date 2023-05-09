@@ -93,7 +93,7 @@ public class LeaveRoomAnalyzer extends WSMessageAnalyzer<IMMessageData> {
             .map(this::getSession)
             .forEach( s -> {
                 WSMessage WSMessage = new WSMessage(SocketContext.ResponseEventType.PEER_LEAVE);
-                WSMessage.setData(MapUtil.of("userId",WSContextUtil.getUserId(s)));
+                WSMessage.setData(MapUtil.of("remoteUserId",WSContextUtil.getUserId(s)));
                 try {
                     s.sendMessage(new TextMessage(JSONUtil.toJsonStr(WSMessage)));
                 } catch (IOException e) {

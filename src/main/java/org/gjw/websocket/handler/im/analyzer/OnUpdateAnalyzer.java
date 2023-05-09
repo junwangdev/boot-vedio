@@ -61,7 +61,7 @@ public class OnUpdateAnalyzer extends WSMessageAnalyzer<IMMessageData> {
                 responseData.setUserId(message.getRemoteUserId());
                 responseData.setRemoteUserId(message.getUserId());
 
-                WSMessage wsMessage = new WSMessage(SocketContext.RequestEventType.CALL_REQUEST);
+                WSMessage wsMessage = new WSMessage(SocketContext.RequestEventType.UPDATE);
                 wsMessage.setData(responseData);
 
                 remoteSession.sendMessage(new TextMessage(JSONUtil.toJsonStr(wsMessage)));
