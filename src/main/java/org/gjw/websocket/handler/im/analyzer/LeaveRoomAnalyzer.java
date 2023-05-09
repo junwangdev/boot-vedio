@@ -1,5 +1,6 @@
 package org.gjw.websocket.handler.im.analyzer;
 
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
@@ -21,6 +22,7 @@ import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 
 import java.io.IOException;
+import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -87,6 +89,20 @@ public class LeaveRoomAnalyzer extends WSMessageAnalyzer<IMMessageData> {
                 .filter(record -> !StrUtil.equals(record.getUserId(), userId))
                 .map(RoomJoinRecord::getUserId)
                 .collect(Collectors.toSet());
+
+        //修改连接状态
+        roomJoinRecordService.lambdaUpdate()
+                .set(RoomJoinRecord::getLeaveDateTime,new Date())
+                .eq(RoomJoinRecord::getUserId,userId)
+                .update();
+
+        //如果所有成员都离开了，关闭房间
+        if(CollUtil.isEmpty(memberUserIdSet)){
+            roomDetailRecordService.lambdaUpdate()
+                    .set(ImRoomDetail::getEndDateTime,new Date())
+                    .eq(ImRoomDetail::getRoomNumber,roomNumber)
+                    .update();
+        }
 
         //群发消息 有用户离开房间
         memberUserIdSet.stream()

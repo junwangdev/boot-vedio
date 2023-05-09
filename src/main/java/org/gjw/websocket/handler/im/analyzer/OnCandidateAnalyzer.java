@@ -41,7 +41,7 @@ public class OnCandidateAnalyzer extends WSMessageAnalyzer<IMMessageData> {
 
         List<RoomJoinRecord> recordList = roomJoinRecordService.lambdaQuery()
                 .eq(RoomJoinRecord::getRoomNumber, roomNumber)
-                .eq(RoomJoinRecord::getUserId, remoteUserId)
+                .in(RoomJoinRecord::getUserId, remoteUserId,userId)
                 .isNull(RoomJoinRecord::getLeaveDateTime)
                 .list();
 
