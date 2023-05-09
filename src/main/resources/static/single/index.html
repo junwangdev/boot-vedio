@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>一对一音视频通话</title>
+</head>
+<body>
+    <h2>一对一音视频通话</h2>
+    <div id="buttons">
+        <button id="callBtn">
+            <span>拨打电话</span>
+        </button>
+        <button id="handupBtn">
+            <span>挂断</span>
+        </button>
+    </div>
+    <div>
+        <span id="currentId"></span>
+    </div>
+    <div id="videos">
+        <video id="localVideo" muted autoplay playsinline></video>
+        <video id="remoteVideo" autoplay playsinline></video>
+    </div>
+    <script src="./index_new.js"></script>
+</body>
+
+</html>
